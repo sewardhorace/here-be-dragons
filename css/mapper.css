@@ -1,0 +1,109 @@
+.mapper-ui {
+    margin: 14px 0;
+    text-align: center;
+}
+
+canvas#canvas {
+    display:inline-block;
+    vertical-align: top;
+    border-radius: 2px 0 0 2px;
+    /*	border: 2px solid #111;*/
+}
+
+form#component-form {
+    height: 500px;
+    width: 300px;
+    display:inline-block;
+    vertical-align: top;
+    background-color: #111;
+    border-radius: 0 2px 2px 0;
+    padding: 4px;
+    margin-left: -4px;
+}
+
+#component-delete {
+    margin-left: -8px;
+    margin-top: 2px;
+    padding: 0px 4px;
+    font-size: 16px;
+    border-radius: 2px;
+    background-color: white;
+    border:none;
+}
+
+#component-name {
+    border: none;
+    outline: none;
+    background-color: #111;
+    color: white;
+    font-weight: bold;
+}
+
+#component-category {
+    margin-right: 2px;
+    margin-top: 2px;
+    float:right;
+    background-color: white;
+    border: none;
+    border-radius: 2px;
+    padding: 2px;
+    outline: none;
+}
+
+.component-none {
+    display: none;
+    color: #9d9d9d;
+    font-weight: bold;
+    background-color: #111;
+    margin: auto;
+    position: relative;
+    top: 40%;
+}
+
+#detail-display {
+    height: 432px;
+    margin: 6px 0;
+    overflow: auto;
+}
+
+.detail {
+    padding: 4px;
+    border-radius: 2px;
+    border: none;
+}
+
+.detail button {
+    display: block;
+    padding: 0px 4px;
+    border-radius: 2px;
+    background-color: #111;
+    color: white;
+    border:none;
+}
+
+.detail textarea {
+    width: 100%;
+    margin-bottom: -5px;
+    resize: vertical;
+    border:none;
+}
+
+#detail-new {
+    background-color: white;
+    color: #111;
+    border: none;
+    border-radius: 2px;
+    outline: none;
+}
+
+#mapper-recenter {
+
+}
+
+input#name-input {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    border: none;
+    outline: none;
+}

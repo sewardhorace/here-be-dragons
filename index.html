@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+  <title>Here Be Dragons</title>
+  <meta name="description" content="Here Be Dragons">
+  <meta name="author" content="maxjwhite.com">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/mapper.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-xs-0 col-md-1"></div>
+
+      <div class="col-xs-12 col-md-10 content">
+
+        <div class="header text-center">
+          <h1>Here Be Dragons</h1>
+          <p>A Tabletop RPG mapping tool</p>
+
+            <label id="file-input-label" for="file-input" class="button">Load existing file</label>
+            <input type="file" name="file-input" id="file-input" accept=".json" hidden="true">
+
+            <input id="file-save" type="button" value="Save file">
+        </div>
+
+        <div class="text-center">
+          <input id="name-input" type="text" placeholder="(file name)"></input>
+        </div>
+
+        <div class="mapper-ui">
+
+          <canvas id="canvas" width="600" height="500">
+          </canvas>
+
+          <form id="component-form">
+            <div class="component-header">
+              <button id="component-delete">&#10006;</button>
+              <input id="component-name" type="text" placeholder="(not named)"></input>
+              <select id="component-category">
+                {% for category, display in categories %}
+                <option value="{{ category }}">{{ display }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div id="detail-display">
+              <textarea></textarea>
+            </div>
+            <div class="component-footer">
+              <button id="detail-new">Add New Detail</button>
+            </div>
+
+            <div class="component-none">No Element Selected</div>
+          </form>
+
+          <div class="mapper-footer">
+            <input type="checkbox" id="mapper-names-toggle">
+            <label>Show Names</label>
+            <button id="mapper-recenter">Recenter</button>
+          </div>
+
+        </div>
+
+        <div class="text-center">
+          <img src="img/ruins.png" %}" alt="Ruins"/>
+        </div>
+
+      </div>
+
+      <div class="col-xs-0 col-md-1"></div>
+    </div>
+  </div>
+  <script src="js/FileSaver.js"></script>
+  <script src="js/scripts.js"></script>
+  <script src="js/mapper.js"></script>
+</body>
+</html>

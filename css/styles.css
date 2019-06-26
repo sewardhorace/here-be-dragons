@@ -1,0 +1,17 @@
+body {
+	background-color: black;
+}
+
+.header {
+	padding: 20px 0 0px;
+	background-color: #FFFBD1;
+	margin: 0 -15px 15px;
+}
+
+.header p {
+	padding-bottom: 15px;
+}
+
+.content {
+	background-color: white;
+}
