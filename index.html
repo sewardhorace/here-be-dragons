@@ -20,15 +20,10 @@
         <div class="header text-center">
           <h1>Here Be Dragons</h1>
           <p>A Tabletop RPG mapping tool</p>
-
-            <label id="file-input-label" for="file-input" class="button">Load existing file</label>
-            <input type="file" name="file-input" id="file-input" accept=".json" hidden="true">
-
-            <input id="file-save" type="button" value="Save file">
         </div>
 
         <div class="text-center">
-          <input id="name-input" type="text" placeholder="(file name)"></input>
+          <input id="game-name" type="text" placeholder="Enter Map Name"></input>
         </div>
 
         <div class="mapper-ui">
@@ -55,8 +50,14 @@
           </form>
 
           <div class="mapper-footer">
+            <label id="file-load-label" for="file-load" class="button">Load existing file</label>
+            <input type="file" name="file-load" id="file-load" accept=".json" hidden="true">
+
+            <input id="file-save" type="button" value="Save file">
+
             <input type="checkbox" id="mapper-names-toggle">
             <label>Show Names</label>
+            
             <button id="mapper-recenter">Recenter</button>
           </div>
 
@@ -72,7 +73,6 @@
     </div>
   </div>
   <script src="js/FileSaver.js"></script>
-  <script src="js/scripts.js"></script>
-  <script src="js/mapper.js"></script>
+\  <script src="js/mapper.js"></script>
 </body>
 </html>

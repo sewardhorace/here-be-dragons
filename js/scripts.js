@@ -1,7 +1,7 @@
 
 var FileManager = {
 
-    fileInputNode : document.getElementById('file-input'),
+    fileLoadNode : document.getElementById('file-load'),
     fileSaveNode : document.getElementById('file-save'),
     data : null,
     fileName : "map.json",
@@ -11,7 +11,7 @@ var FileManager = {
         console.log(this.fileName);
     },
 
-    readFile : function(e) {
+    loadFile : function(e) {
         var file = e.target.files[0];
         if (!file) {
             return;
@@ -43,7 +43,7 @@ var FileManager = {
 
     //TODO: don't bind nodes to this object, just call its functions
     init : function () {
-        this.fileInputNode.addEventListener('change', this.readFile.bind(this), false);
+        this.fileLoadNode.addEventListener('change', this.loadFile.bind(this), false);
         this.fileSaveNode.addEventListener('click', this.saveFile.bind(this), false);
     },
     

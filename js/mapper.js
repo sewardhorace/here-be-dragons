@@ -1,12 +1,11 @@
 
-//TODO: zoom relative to cursor, not upper left corner of map
 
 var img = {
   location: new Image(),
   party: new Image(),
   creature: new Image(),
   transport: new Image(),
-  other: new Image()
+  other: new Image(),
 };
 img.location.src = 'img/location.png';
 img.party.src = 'img/party.png';
@@ -14,68 +13,9 @@ img.creature.src = 'img/creature.png';
 img.transport.src = 'img/transport.png';
 img.other.src = 'img/other.png';
 
-
-function Component (obj) {
-
-  this.id = obj.id || null;
-  this.name = obj.name || '';
-  this.x = obj.x * 1; //for some reason this breaks if '* 1' is removed...
-  this.y = obj.y * 1;
-  this.isActive = obj.isActive || false;
-  this.category = obj.category || '';
-  this.details = obj.details || [];
-  this.hover = false;
-  this.width = 2;
-  this.height = 2;
-
-  this.contains = function (x, y) {
-    return this.x <= x && x <= this.x + this.width &&
-           this.y <= y && y <= this.y + this.height;
-  };
-
-  this.draw = function (ctx, drawName = false) {
-    if (this.isActive) {
-      ctx.beginPath();
-      ctx.arc(this.x + 1, this.y + 1, 1.5, 0, 2*Math.PI, false);
-      ctx.fillStyle="rgba(224, 255, 71, 0.55)";
-      ctx.fill();
-    } else if (this.hover) {
-      ctx.beginPath();
-      ctx.arc(this.x + 1, this.y + 1, 1.25, 0, 2*Math.PI, false);
-      ctx.strokeStyle="rgba(224, 255, 71, 0.55)";
-      ctx.lineWidth=0.5;
-      ctx.stroke();
-    } 
-    if (this.category == 'L') {
-      ctx.drawImage(img.location, this.x, this.y, this.width, this.height);
-    } else if (this.category == 'P') {
-      ctx.drawImage(img.party, this.x, this.y, this.width, this.height);
-    } else if (this.category == 'C') {
-      ctx.drawImage(img.creature, this.x, this.y, this.width, this.height);
-    } else if (this.category == 'T') {
-      ctx.drawImage(img.transport, this.x, this.y, this.width, this.height);
-    } else if (this.category == 'O') {
-      ctx.drawImage(img.other, this.x, this.y, this.width, this.height);
-    }
-    if (drawName) {
-      ctx.font = ".75px Courier";
-      ctx.fillStyle = "black";
-      ctx.textAlign = "center";
-      ctx.fillText(this.name, this.x + 1.1, this.y + 3);
-    }
-  };
-
-};
-
 var mapper = {
-
-  updateTimeout : null,
-  componentWidth : 14,
-  componentHeight : 14,
-  gridLineSpacing : 5,
-  gridLineWidth : 0.25,
-
   //nodes
+  gameNameInput : document.getElementById("game-name"),
   canvas : document.getElementById("canvas"),
   componentForm : document.getElementById("component-form"),
   componentDeleteButton : document.getElementById('component-delete'),
@@ -85,8 +25,19 @@ var mapper = {
   detailNewButton : document.getElementById('detail-new'),
   namesToggle : document.getElementById('mapper-names-toggle'),
   recenterButton : document.getElementById('mapper-recenter'),
+  fileLoadNode : document.getElementById('file-load'),
+  fileSaveNode : document.getElementById('file-save'),
 
-  //data
+  //settings
+  backgroundColor : '#FFFBD1',
+  gridColor : "rgba(224, 255, 71, 0.55)",
+  font : "5px Courier",
+  fontColor : "black",
+  updateTimeout : null,
+  componentWidth : 14,
+  componentHeight : 14,
+  gridLineSpacing : 5,
+  gridLineWidth : 0.25,
   defaultTransforms : {
     scaleFactor : 3.50,
     panX : 0,
@@ -94,31 +45,37 @@ var mapper = {
     prevPanX : 0,
     prevPanY : 0
   },
-
   categories : [
     {
       value : "L",
-      display : "Location"
+      display : "Location",
+      img : img.location,
     },
     {
       value : "P",
-      display : "Party"
+      display : "Party",
+      img : img.party,
     },
     {
       value : "C",
-      display : "Creature"
+      display : "Creature",
+      img : img.creature,
     },
     {
       value : "T",
-      display : "Transport"
+      display : "Transport",
+      img : img.transport,
     },
     {
       value : "O",
-      display : "Other"
+      display : "Other",
+      img : img.other,
     }
   ],
 
+  //data
   data : {
+    name: "",
     components : [],
     showNames : true,
     nextId : 0,
@@ -131,21 +88,18 @@ var mapper = {
     }
   },
 
-  load: function (data) {
-    this.data = data;
-    this.namesToggle.checked = data.showNames;
-  },
-
   init: function () {
-    //this.load(data);
+
     this.context = this.canvas.getContext("2d");
+
+    //canvas
     this.canvas.addEventListener('click', this.handleClick.bind(this), false);
     this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
     this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
     this.canvas.addEventListener('mouseout', this.handleMouseOut.bind(this), false);
     this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this), false);
-    //this.canvas.addEventListener('DOMMouseScroll', this.handleScroll.bind(this), false);
-    //this.canvas.addEventListener('mousewheel', this.handleScroll.bind(this), false);
+    //this.canvas.addEventListener('DOMMouseScroll', this.handleScroll.bind(this), false); //deprecated
+    //this.canvas.addEventListener('mousewheel', this.handleScroll.bind(this), false); //deprecated
     this.canvas.addEventListener('wheel', this.handleScroll.bind(this), false);
     this.canvas.addEventListener('contextmenu', this.handleRightClick.bind(this), false);
     this.canvas.addEventListener('drop', this.handleDetailDrop.bind(this), false);
@@ -153,26 +107,76 @@ var mapper = {
       e.preventDefault();
     });
 
+    //component sidebar
     this.componentForm.addEventListener('submit', function(e) {
       e.preventDefault();
     });
     this.componentDeleteButton.addEventListener("click", this.handleComponentDeleteButton.bind(this), false);
     this.componentNameInput.addEventListener('input', this.handleComponentNameInput.bind(this), false);
     this.componentCategorySelect.addEventListener('change', this.handleComponentCategorySelect.bind(this), false);
-    this.detailNewButton.addEventListener("click", this.handleDetailNewButton.bind(this), false);
-
-    this.namesToggle.addEventListener("change", this.handleNamesToggle.bind(this), false);
-    this.namesToggle.checked = this.data.showNames;
-    this.recenterButton.addEventListener("click", this.handleRecenterButton.bind(this), false);
-
     for (var i = 0; i < this.categories.length; i++) {
       var optionNode = document.createElement("option");
       optionNode.value = this.categories[i].value;
       optionNode.innerText = this.categories[i].display;
       this.componentCategorySelect.appendChild(optionNode);
     }
+    this.detailNewButton.addEventListener("click", this.handleDetailNewButton.bind(this), false);
 
-    this.displayComponent(this.getActiveComponent());
+    //header menu
+    this.gameNameInput.addEventListener('input', this.handleGameNameInput.bind(this), false);
+    this.fileLoadNode.addEventListener('change', this.loadFile.bind(this), false);
+    this.fileSaveNode.addEventListener('click', this.saveFile.bind(this), false);
+    this.namesToggle.addEventListener("change", this.handleNamesToggle.bind(this), false);
+    this.namesToggle.checked = this.data.showNames;
+    this.recenterButton.addEventListener("click", this.handleRecenterButton.bind(this), false);
+
+    this.gameNameInput.value = this.data.name;
+    this.displayComponent(null);
+  },
+
+
+  loadData: function (data) {
+    this.data = data;
+    this.namesToggle.checked = data.showNames;
+    this.gameNameInput.value = data.name;
+    var activeComponent = this.getActiveComponent();
+    this.displayComponent(activeComponent);
+  },
+
+  loadFile : function(e) {
+    var file = e.target.files[0];
+    if (!file) {
+      return;
+    }
+    var reader = new FileReader();
+    var self = this;
+    reader.onload = function(e) {
+      var data = JSON.parse(e.target.result);
+      self.loadData(data);
+    };
+    reader.readAsText(file);
+    //this.fileName = file.name;
+  },
+
+  saveFile : function(e) {
+    var blob = new Blob([JSON.stringify(this.data)], {type: "application/json;charset=utf-8"});
+    saveAs(blob, this.getFileName());
+  },
+
+  getFileName : function() {
+    //credit: https://medium.com/@mhagemann/the-ultimate-way-to-slugify-a-url-string-in-javascript-b8e4a0d849e1
+    var a = 'àáäâãåăæçèéëêǵḧìíïîḿńǹñòóöôœøṕŕßśșțùúüûǘẃẍÿź·/_,:;';
+    var b = 'aaaaaaaaceeeeghiiiimnnnooooooprssstuuuuuwxyz------';
+    var p = new RegExp(a.split('').join('|'), 'g');
+    return this.data.name.slice(0).toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with -
+      .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
+      .replace(/&/g, '-and-') // Replace & with ‘and’
+      .replace(/[^\w\-]+/g, '') // Remove all non-word characters
+      .replace(/\-\-+/g, '-') // Replace multiple - with single -
+      .replace(/^-+/, '') // Trim - from start of text
+      .replace(/-+$/, '') // Trim - from end of text
+      + '.json';
   },
 
   getMousePos: function (e, canvas) {
@@ -193,10 +197,9 @@ var mapper = {
   },
 
   checkCollisions: function (mousePos, callback) {
-    //TODO: it is currently possible to hover/click on two neighboring components at once if they overlap - just return after 1st collision?
+    //TODO: it is currently possible to hover/click on two neighboring components at once if they overlap
     var components = this.data.components;
     for (var i=0; i<components.length; i++){
-      //var isColliding = components[i].contains(mousePos.x, mousePos.y) ? true : false;
       var isColliding = this.doesOverlapComponent(components[i], mousePos.x, mousePos.y) ? true : false;
       callback(components[i], isColliding);
     }
@@ -210,7 +213,6 @@ var mapper = {
     this.checkCollisions(mousePos, function(component, isColliding) {
       if (isColliding){
         self.setActiveComponent(component);
-        self.displayComponent(component);
       }
     });
   },
@@ -245,13 +247,14 @@ var mapper = {
       this.mouseIsDown = false;
 
       if (this.draggingComponent) {
-        this.mapUpdated();
         this.draggingComponent = null;
       } else {
         var mousePos = this.getMousePos(e, this.canvas);
         this.data.transforms.prevPanX += mousePos.x - this.prevMouseDownPos.x;
         this.data.transforms.prevPanY += mousePos.y - this.prevMouseDownPos.y;
       }
+
+      this.dataUpdated();
     }
   },
 
@@ -267,7 +270,6 @@ var mapper = {
     } else {
       this.handleHover(mousePos);
     }
-    this.draw(); //TODO: use animationFrame instead of manually calling draw()?
   },
 
   handleDrag: function (mousePos) {
@@ -292,7 +294,6 @@ var mapper = {
         component.isHovered = false;
       }
     });
-    this.draw();
   },
 
   handleScroll: function(e){
@@ -303,53 +304,47 @@ var mapper = {
       //var factor = 1+delta/10;
       var factor = 1+delta;
       this.data.transforms.scaleFactor *= factor;
-      console.log(this.data.transforms.scaleFactor);
-      this.mapUpdated();
-      this.draw();
+      this.dataUpdated();
     }
   },
 
-  mapUpdated: function () {
+  dataUpdated: function () {
     clearTimeout(this.updateTimeout);
+    //display message: ...
     this.updateTimeout = setTimeout(function () {
       console.log('Map state has changed - consider saving');
     }, 1000);
   },
 
-  addNewComponent: function (mousePos) {
-    //TODO: autofocus on name input field
-    //TODO: create prototype function
-    /*
-    var component = new Component({
-      x : mousePos.x,
-      y : mousePos.y,
-    });
-    component.x -= component.width/2;
-    component.y -= component.height/2;
-    component.game = this.gameID;
-    this.components.push(component);
-    this.setActiveComponent(component);
-    this.displayComponent(component);
-    */
-    var component = {
+  handleGameNameInput: function (e) {
+    e.preventDefault();
+    this.data.name = e.target.value;
+    this.dataUpdated();
+  },
+
+  createDefaultComponent: function(x, y) {
+    return {
       id: this.data.nextId++,
       name : "",
       pos : {
-        x:mousePos.x - this.componentWidth / 2, 
-        y:mousePos.y - this.componentHeight / 2
+        x:x - this.componentWidth / 2, 
+        y:y - this.componentHeight / 2
       },
       prevPos : {
-        x:0, 
-        y:0
+        x:null, 
+        y:null
       },
       details : [],
       category : "O",
       isActive : false,
       isHovered : false
     };
+  },
+
+  addNewComponent: function (mousePos) {
+    var component = this.createDefaultComponent(mousePos.x, mousePos.y);
     this.data.components.push(component);
     this.setActiveComponent(component);
-    this.displayComponent(component);
   },
 
   deleteComponent: function (componentData) {
@@ -357,7 +352,7 @@ var mapper = {
     for (var i=0; i<components.length; i++) {
       if (components[i].id == componentData.id) {
         components.splice(i, 1);
-        this.draw();
+        this.dataUpdated();
         this.displayComponent(null);
       }
     }
@@ -367,7 +362,8 @@ var mapper = {
     var c = this.data.components;
     for (var i=0; i<c.length; i++) c[i].isActive = false;
     component.isActive = true;
-    this.mapUpdated();
+    this.dataUpdated();
+    this.displayComponent(component);
   },
 
   getActiveComponent: function () {
@@ -379,27 +375,23 @@ var mapper = {
     // TODO: add "are you sure?" dialogue(?)
     e.preventDefault();
     this.deleteComponent(this.getActiveComponent());
-    //TODO: display something other than the now-deleted component
   },
 
   handleComponentNameInput: function (e) {
     e.preventDefault();
     var component = this.getActiveComponent()
     component.name = e.target.value;
-    this.mapUpdated();
+    this.dataUpdated();
   },
 
   handleComponentCategorySelect: function (e) {
     e.preventDefault();
     var component = this.getActiveComponent()
     component.category = e.target.value;
-    this.mapUpdated();
-    this.draw();
+    this.dataUpdated();
   },
 
   displayComponent: function (component) {
-    //TODO: display something when no component is active
-    this.draw();
     if (component) {
       document.getElementsByClassName("component-none")[0].style.display = 'none';
       
@@ -410,6 +402,8 @@ var mapper = {
       document.getElementsByClassName("component-header")[0].style.display = 'block';
       this.detailsDiv.style.display = 'block';
       document.getElementsByClassName("component-footer")[0].style.display = 'block';
+
+      this.componentNameInput.focus();
     } else {
       this.detailsDiv.style.display = 'none';
       document.getElementsByClassName("component-header")[0].style.display = 'none';
@@ -422,25 +416,27 @@ var mapper = {
     var activeComponent = this.getActiveComponent();
     var detail = {
       id: this.data.nextId++,
-      name: "default name",
-      text: "default text"
+      //  componentId: componentId,
+      text: ""
     };
     activeComponent.details.push(detail);
+    this.dataUpdated();
     this.displayDetails(activeComponent.details);
+    document.getElementsByClassName("detail")[activeComponent.details.length-1].getElementsByTagName("textarea")[0].focus();
   },
 
   deleteDetail: function (detailData) {
     var activeComponent = this.getActiveComponent();
     this.popDetailFromComponent(detailData, activeComponent);
+    this.dataUpdated();
     this.displayDetails(activeComponent.details);
   },
 
   moveDetailToComponent: function (detailData, targetComponent) {
     var activeComponent = this.getActiveComponent();
     var detail = this.popDetailFromComponent(detailData, activeComponent);
-    //detail.component_id = component.id;
-    this.mapUpdated();
     targetComponent.details.push(detail);
+    this.dataUpdated();
     this.displayDetails(activeComponent.details);
   },
 
@@ -458,12 +454,8 @@ var mapper = {
     e.preventDefault();
     var parent = e.target.parentElement;
     var id = Number(parent.getAttribute('data-id'));
-    //var componentID = Number(parent.getAttribute('data-component-id'));
-    //var content = parent.children[1].value;
     var detailData = {
       id: id,
-    //  component_id: componentID,
-    //  content: content
     };
     this.deleteDetail(detailData);
   },
@@ -480,22 +472,21 @@ var mapper = {
       if (textarea == e.target) {
         var detail = this.getActiveComponent().details[i];
         detail.text = e.target.value;
-        this.mapUpdated();
+        this.dataUpdated();
       }
     }
   },
 
   handleDetailDragStart: function (e) {
     //TODO: allow dragging to rearrange details order in the component display
-    console.log("drag start");
     //dragging the textarea's parent frame, rather than text inside the input
     if (e.target === e.currentTarget) {
       var id = Number(e.target.getAttribute('data-id'));
-      //var componentID = Number(e.target.getAttribute('data-component-id'));
+      //var componentId = Number(e.target.getAttribute('data-component-id'));
       var text = e.target.children[1].value;
       var data = {
         id: id,
-        //component_id: componentID,
+        //componentId: componentId,
         text: text
       };
       e.dataTransfer.setData('text/plain', JSON.stringify(data));
@@ -505,8 +496,6 @@ var mapper = {
   handleDetailDrop: function (e) {
     e.preventDefault();
     var detailData = JSON.parse(e.dataTransfer.getData('text/plain'));
-    console.log(detailData);
-    //e.dataTransfer.clearData(); 
     var mousePos = this.getMousePos(e, this.canvas);
     var self = this;
     this.checkCollisions(mousePos, function(component, isColliding){
@@ -545,7 +534,6 @@ var mapper = {
 
       frame.addEventListener('drop', function (e) {
         //TODO: should be able to drop text into the textarea, but not the drop data
-        console.log('dropped');
         var data = e.dataTransfer.getData('text/plain');//TODO: update to application/json?
         var isJSON = true;
         try {
@@ -555,7 +543,6 @@ var mapper = {
         }
         if (isJSON) {
           e.preventDefault();
-          //e.dataTransfer.clearData();  //can only call clearData() in dragstart events
         }
       });
 
@@ -567,27 +554,23 @@ var mapper = {
 
   handleNamesToggle: function (e) {
     if (this.namesToggle.checked == true){
-      console.log("checked true");
       this.data.showNames = true;
     } else {
-      console.log("checked false");
       this.data.showNames = false;
     }
-    this.mapUpdated();
-    this.draw();
+    this.dataUpdated();
   },
 
   handleRecenterButton: function (e) {
     e.preventDefault();
-    this.data.transforms = this.defaultTransforms;
-    this.mapUpdated();
-    this.draw();
+    Object.assign(this.data.transforms, this.defaultTransforms);
+    this.dataUpdated();
   },
 
   panView: function (delta) {
     this.data.transforms.panX = this.data.transforms.prevPanX + delta.x;
     this.data.transforms.panY = this.data.transforms.prevPanY + delta.y;
-    this.mapUpdated();
+    this.dataUpdated();
   },
 
   drawGrid: function (ctx) {
@@ -610,36 +593,32 @@ var mapper = {
   },
 
   drawComponent: function (component, ctx, drawName = false) {
+    //highlight
     if (component.isActive) {
       ctx.beginPath();
-      //ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.5, 0, 2*Math.PI, false);
       ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.65, 0, 2*Math.PI, false);
-      ctx.fillStyle="rgba(224, 255, 71, 0.55)";
+      ctx.fillStyle=this.gridColor;
       ctx.fill();
     } else if (component.isHovered) {
       ctx.beginPath();
-      //ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.25, 0, 2*Math.PI, false);
       ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.5, 0, 2*Math.PI, false);
-      ctx.strokeStyle="rgba(224, 255, 71, 0.55)";
+      ctx.strokeStyle=this.gridColor;
       ctx.lineWidth=this.componentWidth * .25;
       ctx.stroke();
     } 
-    if (component.category == 'L') {
-      ctx.drawImage(img.location, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
-    } else if (component.category == 'P') {
-      ctx.drawImage(img.party, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
-    } else if (component.category == 'C') {
-      ctx.drawImage(img.creature, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
-    } else if (component.category == 'T') {
-      ctx.drawImage(img.transport, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
-    } else if (component.category == 'O') {
-      ctx.drawImage(img.other, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
+
+    //image
+    for (var i = 0; i < this.categories.length; i++) {
+      if (component.category == this.categories[i].value) {
+        ctx.drawImage(this.categories[i].img, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
+      }
     }
+
+    //name
     if (drawName) {
-      ctx.font = "5px Courier";
-      ctx.fillStyle = "black";
+      ctx.font = this.font;
+      ctx.fillStyle = this.fontColor;
       ctx.textAlign = "center";
-      //ctx.fillText(component.name, component.pos.x + 1.1, component.pos.y + 3);
       ctx.fillText(component.name, component.pos.x + this.componentWidth * .5, component.pos.y + this.componentHeight * 1.5);
     }
   },
@@ -647,7 +626,7 @@ var mapper = {
   draw: function () {
     var ctx = this.context;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    ctx.fillStyle = '#FFFBD1';
+    ctx.fillStyle = this.backgroundColor;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawGrid(ctx);
     ctx.save();
@@ -656,12 +635,13 @@ var mapper = {
     ctx.translate(this.data.transforms.panX, this.data.transforms.panY);
     for (var i = 0; i < this.data.components.length; i++) {
       this.drawComponent(this.data.components[i], ctx, this.data.showNames);
-      //this.data.components[i].draw(ctx, this.showNames);
     }
     ctx.restore();
 
+    window.requestAnimationFrame(this.draw.bind(this));
   }
 };
 
 mapper.init();
+window.requestAnimationFrame(mapper.draw.bind(mapper));
 //mapper.load(data);
