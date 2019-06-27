@@ -70,8 +70,10 @@ function Component (obj) {
 var mapper = {
 
   updateTimeout : null,
-  componentWidth : 2,
-  componentHeight : 2,
+  componentWidth : 14,
+  componentHeight : 14,
+  gridLineSpacing : 5,
+  gridLineWidth : 0.25,
 
   //nodes
   canvas : document.getElementById("canvas"),
@@ -86,18 +88,42 @@ var mapper = {
 
   //data
   defaultTransforms : {
-    scaleFactor : 20.00,
+    scaleFactor : 3.50,
     panX : 0,
     panY : 0,
     prevPanX : 0,
     prevPanY : 0
   },
 
+  categories : [
+    {
+      value : "L",
+      display : "Location"
+    },
+    {
+      value : "P",
+      display : "Party"
+    },
+    {
+      value : "C",
+      display : "Creature"
+    },
+    {
+      value : "T",
+      display : "Transport"
+    },
+    {
+      value : "O",
+      display : "Other"
+    }
+  ],
+
   data : {
     components : [],
     showNames : true,
+    nextId : 0,
     transforms : {
-      scaleFactor : 20.00,
+      scaleFactor : 3.50,
       panX : 0,
       panY : 0,
       prevPanX : 0,
@@ -118,8 +144,9 @@ var mapper = {
     this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
     this.canvas.addEventListener('mouseout', this.handleMouseOut.bind(this), false);
     this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this), false);
-    this.canvas.addEventListener('DOMMouseScroll', this.handleScroll.bind(this), false);
-    this.canvas.addEventListener('mousewheel', this.handleScroll.bind(this), false);
+    //this.canvas.addEventListener('DOMMouseScroll', this.handleScroll.bind(this), false);
+    //this.canvas.addEventListener('mousewheel', this.handleScroll.bind(this), false);
+    this.canvas.addEventListener('wheel', this.handleScroll.bind(this), false);
     this.canvas.addEventListener('contextmenu', this.handleRightClick.bind(this), false);
     this.canvas.addEventListener('drop', this.handleDetailDrop.bind(this), false);
     this.canvas.addEventListener('dragover', function(e) {
@@ -135,7 +162,15 @@ var mapper = {
     this.detailNewButton.addEventListener("click", this.handleDetailNewButton.bind(this), false);
 
     this.namesToggle.addEventListener("change", this.handleNamesToggle.bind(this), false);
+    this.namesToggle.checked = this.data.showNames;
     this.recenterButton.addEventListener("click", this.handleRecenterButton.bind(this), false);
+
+    for (var i = 0; i < this.categories.length; i++) {
+      var optionNode = document.createElement("option");
+      optionNode.value = this.categories[i].value;
+      optionNode.innerText = this.categories[i].display;
+      this.componentCategorySelect.appendChild(optionNode);
+    }
 
     this.displayComponent(this.getActiveComponent());
   },
@@ -263,10 +298,12 @@ var mapper = {
   handleScroll: function(e){
     //TODO: translate during zoom based on mouse position, instead of zooming relative to upper left corner
     e.preventDefault();
-    var delta = e.wheelDelta ? e.wheelDelta/120 : 0;
+    var delta = e.deltaY ? e.deltaY/120 : 0;
     if (delta) {
-      var factor = 1+delta/10;
+      //var factor = 1+delta/10;
+      var factor = 1+delta;
       this.data.transforms.scaleFactor *= factor;
+      console.log(this.data.transforms.scaleFactor);
       this.mapUpdated();
       this.draw();
     }
@@ -455,21 +492,21 @@ var mapper = {
     if (e.target === e.currentTarget) {
       var id = Number(e.target.getAttribute('data-id'));
       //var componentID = Number(e.target.getAttribute('data-component-id'));
-      //var content = e.target.children[1].value;
+      var text = e.target.children[1].value;
       var data = {
         id: id,
         //component_id: componentID,
-        //content: content
+        text: text
       };
       e.dataTransfer.setData('text/plain', JSON.stringify(data));
     }
   },
 
   handleDetailDrop: function (e) {
-    console.log("dropped");
     e.preventDefault();
     var detailData = JSON.parse(e.dataTransfer.getData('text/plain'));
-    e.dataTransfer.clearData();
+    console.log(detailData);
+    //e.dataTransfer.clearData(); 
     var mousePos = this.getMousePos(e, this.canvas);
     var self = this;
     this.checkCollisions(mousePos, function(component, isColliding){
@@ -518,7 +555,7 @@ var mapper = {
         }
         if (isJSON) {
           e.preventDefault();
-          e.dataTransfer.clearData();
+          //e.dataTransfer.clearData();  //can only call clearData() in dragstart events
         }
       });
 
@@ -530,8 +567,10 @@ var mapper = {
 
   handleNamesToggle: function (e) {
     if (this.namesToggle.checked == true){
+      console.log("checked true");
       this.data.showNames = true;
     } else {
+      console.log("checked false");
       this.data.showNames = false;
     }
     this.mapUpdated();
@@ -552,19 +591,19 @@ var mapper = {
   },
 
   drawGrid: function (ctx) {
-    for (var i = (this.data.transforms.panX % 1) * this.data.transforms.scaleFactor; i < this.canvas.width; i+=this.data.transforms.scaleFactor) {
+    for (var i = (this.data.transforms.panX % this.gridLineSpacing) * this.data.transforms.scaleFactor; i < this.canvas.width; i+=this.data.transforms.scaleFactor*this.gridLineSpacing) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
       ctx.lineTo(i, this.canvas.height);
-      ctx.lineWidth = 0.05 * this.data.transforms.scaleFactor;
+      ctx.lineWidth = this.gridLineWidth * this.data.transforms.scaleFactor;
       ctx.strokeStyle = '#B3CAF5';
       ctx.stroke();
     }
-    for (var i = (this.data.transforms.panY % 1) * this.data.transforms.scaleFactor; i < this.canvas.height; i+=this.data.transforms.scaleFactor) {
+    for (var i = (this.data.transforms.panY % this.gridLineSpacing) * this.data.transforms.scaleFactor; i < this.canvas.height; i+=this.data.transforms.scaleFactor*this.gridLineSpacing) {
       ctx.beginPath();
       ctx.moveTo(0, i);
       ctx.lineTo(this.canvas.width, i);
-      ctx.lineWidth = 0.05 * this.data.transforms.scaleFactor;
+      ctx.lineWidth = this.gridLineWidth * this.data.transforms.scaleFactor;
       ctx.strokeStyle = '#B3CAF5';
       ctx.stroke();
     }
@@ -573,14 +612,16 @@ var mapper = {
   drawComponent: function (component, ctx, drawName = false) {
     if (component.isActive) {
       ctx.beginPath();
-      ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.5, 0, 2*Math.PI, false);
+      //ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.5, 0, 2*Math.PI, false);
+      ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.65, 0, 2*Math.PI, false);
       ctx.fillStyle="rgba(224, 255, 71, 0.55)";
       ctx.fill();
     } else if (component.isHovered) {
       ctx.beginPath();
-      ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.25, 0, 2*Math.PI, false);
+      //ctx.arc(component.pos.x + 1, component.pos.y + 1, 1.25, 0, 2*Math.PI, false);
+      ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.5, 0, 2*Math.PI, false);
       ctx.strokeStyle="rgba(224, 255, 71, 0.55)";
-      ctx.lineWidth=0.5;
+      ctx.lineWidth=this.componentWidth * .25;
       ctx.stroke();
     } 
     if (component.category == 'L') {
@@ -595,10 +636,11 @@ var mapper = {
       ctx.drawImage(img.other, component.pos.x, component.pos.y, this.componentWidth, this.componentHeight);
     }
     if (drawName) {
-      ctx.font = ".75px Courier";
+      ctx.font = "5px Courier";
       ctx.fillStyle = "black";
       ctx.textAlign = "center";
-      ctx.fillText(component.name, component.pos.x + 1.1, component.pos.y + 3);
+      //ctx.fillText(component.name, component.pos.x + 1.1, component.pos.y + 3);
+      ctx.fillText(component.name, component.pos.x + this.componentWidth * .5, component.pos.y + this.componentHeight * 1.5);
     }
   },
 
@@ -613,7 +655,7 @@ var mapper = {
     ctx.scale(this.data.transforms.scaleFactor, this.data.transforms.scaleFactor);
     ctx.translate(this.data.transforms.panX, this.data.transforms.panY);
     for (var i = 0; i < this.data.components.length; i++) {
-      this.drawComponent(this.data.components[i], ctx, this.showNames);
+      this.drawComponent(this.data.components[i], ctx, this.data.showNames);
       //this.data.components[i].draw(ctx, this.showNames);
     }
     ctx.restore();
