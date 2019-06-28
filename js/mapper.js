@@ -454,7 +454,7 @@ var mapper = {
 
   handleDetailDeleteButton: function (e) {
     e.preventDefault();
-    var id = Number(e.target.nextSibling.getAttribute('data-id'));
+    var id = Number(e.target.parentElement.getAttribute('data-id'));
     var detailData = {
       id: id,
     };
@@ -481,19 +481,16 @@ var mapper = {
   handleDetailDragStart: function (e) {
     //TODO: allow dragging to rearrange details order in the component display
     //dragging the textarea's parent frame, rather than text inside the input
+    console.log("drag start");
     if (e.target === e.currentTarget) {
       var id = Number(e.target.getAttribute('data-id'));
       //var componentId = Number(e.target.getAttribute('data-component-id'));
-      console.log(e.target);
-      var text = e.target.nextSibling.value; //textarea
+      var text = e.target.getElementsByTagName('textarea')[0].value
       var data = {
         id: id,
         //componentId: componentId,
         text: text
       };
-      var img = new Image(); 
-      img.src = 'img/other.png'; 
-      e.dataTransfer.setDragImage(img, img.width/2, img.height/2);
       e.dataTransfer.setData('application/json', JSON.stringify(data));
       e.dataTransfer.setData('text/plain', text);
     }
@@ -521,23 +518,27 @@ var mapper = {
       deleteButton.innerHTML = '&#10006;';
       deleteButton.addEventListener('click', this.handleDetailDeleteButton.bind(this));
 
-      var dragHandle = document.createElement('div');
-      dragHandle.setAttribute('class', 'drag-handle');
-
       var textarea = document.createElement('textarea');
       textarea.setAttribute('rows', 3);
       textarea.value = detail.text;
       textarea.addEventListener('input', this.handleDetailInput.bind(this), false);
+      textarea.addEventListener('mousedown', function(e) {
+        //disable dragging of parent to preserve textarea behaviors
+        e.target.parentElement.setAttribute('draggable', false);
+        e.stopPropagation();
+      }, false);
 
       var frame = document.createElement('div');
       frame.setAttribute('class', 'detail');
-      dragHandle.setAttribute('draggable', true);
-      dragHandle.setAttribute('data-id', detail.id);
+      frame.setAttribute('data-id', detail.id);
       //frame.setAttribute('data-component-id', detail.component_id);
-      dragHandle.addEventListener('dragstart', this.handleDetailDragStart.bind(this), false);
+      frame.addEventListener('dragstart', this.handleDetailDragStart.bind(this), false);
+      frame.addEventListener('mousedown', function(e) {
+        //enable dragging when clicked
+        this.setAttribute('draggable', true);
+      }, false);
 
       frame.append(deleteButton);
-      frame.append(dragHandle);
       frame.append(textarea);
       this.detailsDiv.append(frame);
     }
