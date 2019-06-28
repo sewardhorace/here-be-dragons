@@ -50,12 +50,10 @@ form#component-form {
 }
 
 #component-category {
-    margin-right: 2px;
-    margin-top: 2px;
     background-color: white;
     border: none;
     border-radius: 2px;
-    padding: 2px;
+    padding: 4px 2px 3px;
     outline: none;
 }
 
@@ -152,5 +150,19 @@ input#game-name {
 
 .button:hover {
     background-color: #9bb6eb;
+    cursor: pointer;
+}
+
+.button-warn {
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    background-color: #ff8345;
+    color: #111;
+    margin: 10px 2px 10px;
+}
+
+.button-warn:hover {
+    background-color: #ff7029;
     cursor: pointer;
 }

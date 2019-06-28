@@ -105,9 +105,10 @@ var mapper = {
     this.canvas.addEventListener('contextmenu', this.handleRightClick.bind(this), false);
     this.canvas.addEventListener('drop', this.handleDetailDrop.bind(this), false);
     this.canvas.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      //TODO: highlight valid drop targets on dragover
-    });
+      e.preventDefault(); //manually handle dropping
+      var mousePos = this.getMousePos(e, this.canvas);
+      this.handleHover(mousePos);
+    }.bind(this));
 
     //component sidebar
     this.componentForm.addEventListener('submit', function(e) {
@@ -163,6 +164,7 @@ var mapper = {
   saveFile : function(e) {
     var blob = new Blob([JSON.stringify(this.data)], {type: "application/json;charset=utf-8"});
     saveAs(blob, this.getFileName());
+    this.fileSaveNode.setAttribute('class', 'button');
   },
 
   getFileName : function() {
@@ -301,7 +303,7 @@ var mapper = {
   handleScroll: function(e){
     //TODO: translate during zoom based on mouse position, instead of zooming relative to upper left corner
     e.preventDefault();
-    var delta = e.deltaY ? e.deltaY/120 : 0;
+    var delta = e.deltaY ? -e.deltaY/120 : 0;
     if (delta) {
       //var factor = 1+delta/10;
       var factor = 1+delta;
@@ -314,8 +316,9 @@ var mapper = {
     clearTimeout(this.updateTimeout);
     //display message: ...
     this.updateTimeout = setTimeout(function () {
-      console.log('Map state has changed - consider saving');
-    }, 1000);
+      this.fileSaveNode.setAttribute('class', 'button-warn');
+      //console.log('Map state has changed - consider saving');
+    }.bind(this), 1000);
   },
 
   handleGameNameInput: function (e) {
