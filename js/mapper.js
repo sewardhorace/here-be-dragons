@@ -30,7 +30,8 @@ var mapper = {
 
   //settings
   backgroundColor : '#FFFBD1',
-  gridColor : "rgba(224, 255, 71, 0.55)",
+  gridColor: '#B3CAF5',
+  highlightColor : "rgba(224, 255, 71, 0.55)",
   font : "5px Courier",
   fontColor : "black",
   updateTimeout : null,
@@ -105,6 +106,7 @@ var mapper = {
     this.canvas.addEventListener('drop', this.handleDetailDrop.bind(this), false);
     this.canvas.addEventListener('dragover', function(e) {
       e.preventDefault();
+      //TODO: highlight valid drop targets on dragover
     });
 
     //component sidebar
@@ -419,10 +421,10 @@ var mapper = {
       //  componentId: componentId,
       text: ""
     };
-    activeComponent.details.push(detail);
+    activeComponent.details.unshift(detail);
     this.dataUpdated();
     this.displayDetails(activeComponent.details);
-    document.getElementsByClassName("detail")[activeComponent.details.length-1].getElementsByTagName("textarea")[0].focus();
+    document.getElementsByClassName("detail")[0].getElementsByTagName("textarea")[0].focus();
   },
 
   deleteDetail: function (detailData) {
@@ -452,8 +454,7 @@ var mapper = {
 
   handleDetailDeleteButton: function (e) {
     e.preventDefault();
-    var parent = e.target.parentElement;
-    var id = Number(parent.getAttribute('data-id'));
+    var id = Number(e.target.nextSibling.getAttribute('data-id'));
     var detailData = {
       id: id,
     };
@@ -468,7 +469,7 @@ var mapper = {
   handleDetailInput: function (e) {
     var divs = this.detailsDiv.children;
     for (var i=0; i<divs.length; i++) {
-      var textarea = divs[i].children[1];
+      var textarea = divs[i].getElementsByTagName('textarea')[0];
       if (textarea == e.target) {
         var detail = this.getActiveComponent().details[i];
         detail.text = e.target.value;
@@ -483,19 +484,24 @@ var mapper = {
     if (e.target === e.currentTarget) {
       var id = Number(e.target.getAttribute('data-id'));
       //var componentId = Number(e.target.getAttribute('data-component-id'));
-      var text = e.target.children[1].value;
+      console.log(e.target);
+      var text = e.target.nextSibling.value; //textarea
       var data = {
         id: id,
         //componentId: componentId,
         text: text
       };
-      e.dataTransfer.setData('text/plain', JSON.stringify(data));
+      var img = new Image(); 
+      img.src = 'img/other.png'; 
+      e.dataTransfer.setDragImage(img, img.width/2, img.height/2);
+      e.dataTransfer.setData('application/json', JSON.stringify(data));
+      e.dataTransfer.setData('text/plain', text);
     }
   },
 
   handleDetailDrop: function (e) {
     e.preventDefault();
-    var detailData = JSON.parse(e.dataTransfer.getData('text/plain'));
+    var detailData = JSON.parse(e.dataTransfer.getData('application/json'));
     var mousePos = this.getMousePos(e, this.canvas);
     var self = this;
     this.checkCollisions(mousePos, function(component, isColliding){
@@ -508,45 +514,30 @@ var mapper = {
   displayDetails: function (details) {
     this.detailsDiv.innerHTML = "";
     for (var i=0; i<details.length; i++) {
+      
       var detail = details[i];
+
+      var deleteButton = document.createElement('button');
+      deleteButton.innerHTML = '&#10006;';
+      deleteButton.addEventListener('click', this.handleDetailDeleteButton.bind(this));
+
+      var dragHandle = document.createElement('div');
+      dragHandle.setAttribute('class', 'drag-handle');
 
       var textarea = document.createElement('textarea');
       textarea.setAttribute('rows', 3);
       textarea.value = detail.text;
       textarea.addEventListener('input', this.handleDetailInput.bind(this), false);
 
-      var deleteButton = document.createElement('button');
-      deleteButton.innerHTML = '&#10006;';
-      deleteButton.addEventListener('click', this.handleDetailDeleteButton.bind(this));
-
       var frame = document.createElement('div');
       frame.setAttribute('class', 'detail');
-      frame.setAttribute('draggable', true);
-      frame.setAttribute('data-id', detail.id);
+      dragHandle.setAttribute('draggable', true);
+      dragHandle.setAttribute('data-id', detail.id);
       //frame.setAttribute('data-component-id', detail.component_id);
-      frame.addEventListener('dragstart', this.handleDetailDragStart.bind(this), false);
-      frame.addEventListener('mousedown', function (e) {
-        if (e.target !== this) {
-          //clicked child element - select and drag text from the textarea instead
-          e.stopPropagation();
-        }
-      });
-
-      frame.addEventListener('drop', function (e) {
-        //TODO: should be able to drop text into the textarea, but not the drop data
-        var data = e.dataTransfer.getData('text/plain');//TODO: update to application/json?
-        var isJSON = true;
-        try {
-          JSON.parse(data);
-        } catch (e) {
-          isJSON  = false;
-        }
-        if (isJSON) {
-          e.preventDefault();
-        }
-      });
+      dragHandle.addEventListener('dragstart', this.handleDetailDragStart.bind(this), false);
 
       frame.append(deleteButton);
+      frame.append(dragHandle);
       frame.append(textarea);
       this.detailsDiv.append(frame);
     }
@@ -579,7 +570,7 @@ var mapper = {
       ctx.moveTo(i, 0);
       ctx.lineTo(i, this.canvas.height);
       ctx.lineWidth = this.gridLineWidth * this.data.transforms.scaleFactor;
-      ctx.strokeStyle = '#B3CAF5';
+      ctx.strokeStyle = this.gridColor;
       ctx.stroke();
     }
     for (var i = (this.data.transforms.panY % this.gridLineSpacing) * this.data.transforms.scaleFactor; i < this.canvas.height; i+=this.data.transforms.scaleFactor*this.gridLineSpacing) {
@@ -587,7 +578,7 @@ var mapper = {
       ctx.moveTo(0, i);
       ctx.lineTo(this.canvas.width, i);
       ctx.lineWidth = this.gridLineWidth * this.data.transforms.scaleFactor;
-      ctx.strokeStyle = '#B3CAF5';
+      ctx.strokeStyle = this.gridColor;
       ctx.stroke();
     }
   },
@@ -597,12 +588,12 @@ var mapper = {
     if (component.isActive) {
       ctx.beginPath();
       ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.65, 0, 2*Math.PI, false);
-      ctx.fillStyle=this.gridColor;
+      ctx.fillStyle=this.highlightColor;
       ctx.fill();
     } else if (component.isHovered) {
       ctx.beginPath();
       ctx.arc(component.pos.x + this.componentWidth/2, component.pos.y + this.componentHeight/2, this.componentWidth*.5, 0, 2*Math.PI, false);
-      ctx.strokeStyle=this.gridColor;
+      ctx.strokeStyle=this.highlightColor;
       ctx.lineWidth=this.componentWidth * .25;
       ctx.stroke();
     } 

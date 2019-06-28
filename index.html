@@ -6,6 +6,7 @@
   <title>Here Be Dragons</title>
   <meta name="description" content="Here Be Dragons">
   <meta name="author" content="maxjwhite.com">
+  <link href="https://fonts.googleapis.com/css?family=Pirata+One&display=swap" rel="stylesheet"> 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/mapper.css">
@@ -22,11 +23,24 @@
           <p>A Tabletop RPG mapping tool</p>
         </div>
 
-        <div class="text-center">
-          <input id="game-name" type="text" placeholder="Enter Map Name"></input>
-        </div>
-
         <div class="mapper-ui">
+
+          <div class="mapper-header">
+
+            <div class="text-center">
+              <input id="game-name" type="text" placeholder="Enter Map Name"></input>
+            </div>
+
+            <label id="file-load-label" for="file-load" class="button">Upload</label>
+            <input type="file" name="file-load" id="file-load" accept=".json" hidden="true">
+
+            <input id="file-save" type="button" class="button" value="Save">
+
+            <button id="mapper-recenter" class="button">Recenter</button>
+
+            <input type="checkbox" id="mapper-names-toggle">
+            <label>Show Names</label>
+          </div>
 
           <canvas id="canvas" width="600" height="500">
           </canvas>
@@ -36,30 +50,20 @@
               <button id="component-delete">&#10006;</button>
               <input id="component-name" type="text" placeholder="(not named)"></input>
               <select id="component-category">
-                <!--<option value="{{ category }}">{{ display }}</option>-->
+                <!--<option value="O">Other</option> provided by javascript -->
               </select>
+
+              <button id="detail-new">Add New Detail</button>
             </div>
             <div id="detail-display">
               <textarea></textarea>
             </div>
             <div class="component-footer">
-              <button id="detail-new">Add New Detail</button>
+              
             </div>
 
             <div class="component-none">No Element Selected</div>
           </form>
-
-          <div class="mapper-footer">
-            <label id="file-load-label" for="file-load" class="button">Load existing file</label>
-            <input type="file" name="file-load" id="file-load" accept=".json" hidden="true">
-
-            <input id="file-save" type="button" value="Save file">
-
-            <input type="checkbox" id="mapper-names-toggle">
-            <label>Show Names</label>
-            
-            <button id="mapper-recenter">Recenter</button>
-          </div>
 
         </div>
 
